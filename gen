@@ -69,5 +69,6 @@ openssl x509 -req -in ${DOMAIN}.csr -CA rootCA.crt -CAkey rootCA.key -CAcreatese
 
 # Ensure that the creator is the only one who can see the generated files
 chmod 400 ${DOMAIN}.*
-chmod 400 rootCA.*
 
+# Deletes Serial File... (I think it's unnecessary)
+rm rootCA.srl -f

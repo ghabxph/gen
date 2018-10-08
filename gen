@@ -1,8 +1,37 @@
 #!/bin/bash
+# Copyright 2018 (C) Gabriel Lucernas Pascual <ghabxph.official@gmail.com>
+#
+# Permission is  hereby granted, free of charge, to any person obtaining a copy of this
+# software and associated documentation files (the "Software"), to deal in the Software
+# without  restriction,  including without limitation the  rights to use, copy, modify,
+# merge, publish,  distribute, sublicense, and/or sell  copies of the  Software, and to
+# permit persons to  whom  the Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies
+# or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS",  WITHOUT WARRANTY OF ANY KIND,  EXPRESS OR IMPLIED,
+# INCLUDING  BUT  NOT  LIMITED  TO  THE  WARRANTIES  OF  MERCHANTABILITY, FITNESS FOR A
+# PARTICULAR  PURPOSE  AND  NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS  BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
+# CONTRACT,  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE
+# OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# Author: Gabriel Lucernas Pascual <ghabxph.official@gmail.com>
+
 
 SCRIPTDIR=`dirname $(realpath $0)`
-ROOTCAKEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+DOMAIN=$1
 
+if [ -z ${DOMAIN} ]
+then
+    echo "ERROR: Please type the domain name of your website"
+    echo "USAGE: $0 <domain-name>"
+    exit
+fi
+
+# Generates RootCA Key
 if [ ! -f "${SCRIPTDIR}/rootCA.key" ]
 then
     # Generate random rootCA key
@@ -14,4 +43,27 @@ then
     chmod 400 rootCA.key
 fi
 
+# Generates RootCA Certificate
+openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1825 -out rootCA.crt -passin pass:`cat rootCA.pass` \
+    -subj "/C=PH/ST=Manila/L=Manila/O=IT Solutions/OU=Software Development/CN=qq.com"
+
+# Generate key for your website's certificate
+openssl genrsa -out ${DOMAIN}.key 4096
+
+# Create a signing request
+openssl req -new -key ${DOMAIN}.key -out ${DOMAIN}.csr \
+    -subj "/C=PH/ST=Manila/L=Manila/O=IT Solutions/OU=Software Development/CN=${DOMAIN}"
+
+# The domain information (very essential for the green mark)
+echo authorityKeyIdentifier=keyid,issuer                                               > ${DOMAIN}.ext
+echo basicConstraints=CA:FALSE                                                        >> ${DOMAIN}.ext
+echo keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment   >> ${DOMAIN}.ext
+echo subjectAltName = @alt_names                                                      >> ${DOMAIN}.ext
+echo                                                                                  >> ${DOMAIN}.ext
+echo [alt_names]                                                                      >> ${DOMAIN}.ext
+echo DNS.1 = ${DOMAIN}                                                                >> ${DOMAIN}.ext
+
+# Final step! Creates your ssl certificate, derived from your generated rootCA.crt
+openssl x509 -req -in ${DOMAIN}.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial \
+-out ${DOMAIN}.crt -days 1825 -sha256 -extfile ${DOMAIN}.ext -passin pass:`cat rootCA.pass`
 

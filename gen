@@ -46,6 +46,7 @@ fi
 # Generates RootCA Certificate
 openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1825 -out rootCA.crt -passin pass:`cat rootCA.pass` \
     -subj "/C=PH/ST=Manila/L=Manila/O=IT Solutions/OU=Software Development/CN=qq.com"
+chmod 400 rootCA.crt
 
 # Generate key for your website's certificate
 openssl genrsa -out ${DOMAIN}.key 4096

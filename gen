@@ -1,0 +1,17 @@
+#!/bin/bash
+
+SCRIPTDIR=`dirname $(realpath $0)`
+ROOTCAKEY=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+
+if [ ! -f "${SCRIPTDIR}/rootCA.key" ]
+then
+    # Generate random rootCA key
+    echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1) > rootCA.pass
+    chmod 400 rootCA.pass
+
+    # Generate rootCA.key
+    openssl genrsa -aes256 -out rootCA.key -passout pass:`cat rootCA.pass` 4096
+    chmod 400 rootCA.key
+fi
+
+

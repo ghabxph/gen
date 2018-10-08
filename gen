@@ -67,3 +67,7 @@ echo DNS.1 = ${DOMAIN}                                                          
 openssl x509 -req -in ${DOMAIN}.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial \
 -out ${DOMAIN}.crt -days 1825 -sha256 -extfile ${DOMAIN}.ext -passin pass:`cat rootCA.pass`
 
+# Ensure that the creator is the only one who can see the generated files
+chmod 400 ${DOMAIN}.*
+chmod 400 rootCA.*
+
